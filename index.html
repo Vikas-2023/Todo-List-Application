@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo-List Application</title>
+    <!-- <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"> -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div id="app">
+        <div class="nav">
+            <a href="#" @click="showTasks('all')"><b>All Tasks</b></a>
+            <a href="#" @click="showTasks('completed')"><b>Completed Tasks</b></a>
+            <a href="#" @click="showTasks('pending')"><b>Pending Tasks</b></a>
+        </div>
+        <div class="container formcontainer">
+            <div class="form-input">
+                <input type="text" placeholder="Add new task" v-model="newTaskName" class="place">
+                <button class="add" @click="addTask">Add Task</button>
+            </div>
+        </div>
+        <div class="container">
+            <div class="task" v-for="(task, index) in filteredTasks" :key="index">
+                <input type="checkbox" v-model="task.completed" @change="completeTask(task)">
+                <span :class="{ completed: task.completed }">{{ task.name }}</span>
+                <span class="time timedate">{{ task.createdAt }}</span>
+                <button class="editbutton" @click="editTask(index)">Edit</button>
+                <button @click="deleteTask(index)">Delete</button>
+                <div v-if="editingTask === index" class="modal editbox">
+                    <div class="modal-content">
+                        <h2>Update Your Task</h2>
+                        <input type="text" v-model="editedTaskName" class="place">
+                        <button class="editButton" @click="saveTask(index)">Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+    <script>
+        new Vue({
+            el: '#app',
+            data: {
+                tasks: [],
+                newTaskName: '',
+                currentView: 'all',
+                editingTask: null,
+                editedTaskName: ''
+            },
+            mounted() {
+                const savedTasks = localStorage.getItem('tasks');
+                if (savedTasks) {
+                    this.tasks = JSON.parse(savedTasks);
+                }
+                this.startTimer();
+            },
+            computed: {
+                filteredTasks() {
+                    if (this.currentView === 'completed') {
+                        return this.tasks.filter(task => task.completed);
+                    } else if (this.currentView === 'pending') {
+                        return this.tasks.filter(task => !task.completed);
+                    } else {
+                        return this.tasks;
+                    }
+                }
+            },
+            watch: {
+                tasks: {
+                    handler() {
+                        localStorage.setItem('tasks', JSON.stringify(this.tasks));
+                    },
+                    deep: true
+                }
+            },
+            methods: {
+                showTasks(view) {
+                    this.currentView = view;
+                },
+                addTask() {
+                    if (this.newTaskName.trim() !== '') {
+                        this.tasks.push({
+                            name: this.newTaskName,
+                            completed: false,
+                            createdAt: new Date().toLocaleString()
+                        });
+                        this.newTaskName = '';
+                    }
+                },
+                completeTask(task) {
+                    // Handle completion logic here
+                    console.log('Task completed:', task);
+                },
+                editTask(index) {
+                    this.editingTask = index;
+                    this.editedTaskName = this.tasks[index].name;
+                },
+                saveTask(index) {
+                    if (this.editedTaskName.trim() !== '') {
+                        this.tasks[index].name = this.editedTaskName;
+                        this.editingTask = null;
+                        this.editedTaskName = '';
+                    }
+                },
+                deleteTask(index) {
+                    this.tasks.splice(index, 1);
+                },
+                startTimer() {
+                    setInterval(() => {
+                        this.tasks.forEach(task => {
+                            task.elapsedTime = this.calculateElapsedTime(task.createdAt);
+                        });
+                    }, 1000); // Update every second
+                },
+                calculateElapsedTime(createdAt) {
+                    const currentTime = new Date();
+                    const elapsedTime = currentTime - new Date(createdAt);
+                    const seconds = Math.floor(elapsedTime / 1000);
+                    const minutes = Math.floor(seconds / 60);
+                    const hours = Math.floor(minutes / 60);
+                    const days = Math.floor(hours / 24);
+
+                    if (days > 0) {
+                        return `${days}d`;
+                    } else if (hours > 0) {
+                        return `${hours}h`;
+                    } else if (minutes > 0) {
+                        return `${minutes}m`;
+                    } else {
+                        return `${seconds}s`;
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>
